@@ -3,76 +3,152 @@
 const { getRandomWordSync, getRandomWord } = require('word-maker');
 const fs = require('fs');
 const PATH = require("path");
-const outFile = PATH.resolve(__dirname + '/../output.txt');
+const task1FileSync = PATH.resolve(__dirname + '/../task1sync.txt');
+const task2FileSync = PATH.resolve(__dirname + '/../task2sync.txt');
+const task1FileAsync = PATH.resolve(__dirname + '/../task1async.txt');
+const task2FileAsync = PATH.resolve(__dirname + '/../task2async.txt');
 
 async function runExercises() {
-	try{
-        await 
-        exercise1();
-		exercise2();
-		await exercise3();
-	} catch(err) {
-		console.log(err);
-	}
+  try {
+    task1(); task2();
+    await task1Async(); task2Async();
+  } catch (err) {
+    console.log(err);
+  }
 }
 
-
 /**
-Task 1 
-Print numbers from 1 to 100 with a random word
-*/
-async function exercise1() {
+ * Task 1
+ * Modified function to catch errors for sync method
+ */
+function task1() {
 
-	for(let i = 1; i <= 100; i++) {
-        let word = await getRandomWordSync();
-		await writeToFile(`${i}: ${word}`);
+  fs.writeFileSync(task1FileSync, '');
+  var randomWord = '';
+
+  for (let i = 1; i <= 100; i += 1) {
+    try {
+      randomWord = getRandomWordSync({ withErrors: true });
+      fs.appendFile(task1FileSync, `${i}: ${randomWord}\n`, writeErr => {
+        // if error in appending process, throw error directly
+        if (writeErr) throw writeErr;
+      });
+    } catch (err) {
+      fs.appendFile(task1FileSync, `${i}: It shouldn't break anything!\n`, writeErr => {
+        // if there's an error in write process, throw error
+        if (writeErr) throw writeErr;
+      });
     }
+  }
 }
 
 /**
-Task 2 
-Modified function for
-Print numbers from 1 to 100
-multiples of three, print "Fizz"
-multiples of five, print "Buzz"
-multiples of three and five, print "FizzBuzz"
-*/
-async function exercise2() {
-	for(let i = 1; i <= 100; i++) {
-		let word = await getRandomWordSync();
-        if(i%3 === 0) word = 'Fizz';
-        if(i%5 === 0) word = 'Buzz';
-        if(i%15 === 0) word = 'FizzBuzz';
-        await writeToFile(`${i}: ${word}`);
-	}
-}
-
-/**
- * Task 3
+ * Task 2 
+ * Fizz Buzz approch with catching errors for sync method
  */
-function exercise3() {
+function task2() {
 
-	for(let i = 1; i <= 100; i++) {
-		getRandomWord({ withErrors: true })
-		.then(function(word) {
-			writeToFile(`${i}: ${word}`);
-		})
-		.catch(function(err) {
-			writeToFile(`${i}: It shouldn't break anything!`);
-		})
-	}
+  fs.writeFileSync(task2FileSync, '');
+  var randomWord = '';
+
+  for (let i = 1; i <= 100; i += 1) {
+    // Try to receive a word after invoking getRandomWordSync with errors on
+    try {
+      randomWord = getRandomWordSync({ withErrors: true });
+
+      let fizzBuzz = '';
+      if (i % 5 === 0 && i && i % 3 === 0) {
+        fizzBuzz = `${i}: FizzBuzz`;
+      } else if (i % 3 === 0) {
+        fizzBuzz = `${i}: Fizz`;
+      } else if (i % 5 === 0) {
+        fizzBuzz = `${i}: Buzz`;
+      } else {
+        fizzBuzz = `${i}: ${randomWord}`;
+      }
+      fs.appendFile(task2FileSync, `${fizzBuzz}\n`, writeErr => {
+        // if error in write process, throw error
+        if (writeErr) throw writeErr;
+      });
+    } catch (err) {
+      //  if unsuccessful, print out provided error message
+      fs.appendFile(task2FileSync, `${i}: It shouldn't break anything!\n`, writeErr => {
+        // if error in write process, throw error
+        if (writeErr) throw writeErr;
+      });
+    }
+  }
 }
 
 /**
- * Write each line into text file
- * @param {*} line 
+ * Modified version of task1 function for async with error handling
  */
-function writeToFile(line) {
-    
-    line+= '\n';
-	fs.appendFile(outFile, line, function (err) {
-		if (err) throw err;
-	});
+async function task1Async() {
+
+  fs.writeFile(task1FileAsync, `It shouldn't break anything!\n`, function (err) {
+    if (err) throw err;
+  });
+
+  let promiseChain = Promise.resolve();
+
+  for (let i = 1; i <= 100; i += 1) {
+
+    promiseChain = promiseChain
+      .then(() => getRandomWord({ withErrors: true }))
+      .then(word => {
+        // write word to the file
+        fs.appendFile(task1FileAsync, `${i}: ${word}\n`, writeErr => {
+          // if error then throw error directly
+          if (writeErr) throw writeErr;
+        });
+      })
+      .catch(err => {
+        // if there's an error write it to the file
+        fs.appendFile(task1FileAsync, `${i}: It shouldn't break anything!\n`, writeErr => {
+          if (writeErr) throw writeErr;
+        });
+      });
+  }
+}
+
+/**
+ * Modified version of task2 function for async
+ */
+async function task2Async() {
+
+  fs.writeFile(task2FileAsync, `It shouldn't break anything!\n`, function (err) {
+    if (err) throw err;
+  });
+
+  let promiseChain2 = Promise.resolve();
+
+  for (let i = 1; i <= 100; i += 1) {
+
+    promiseChain2 = promiseChain2
+      .then(() => getRandomWord({ withErrors: true }))
+      .then(word => {
+        let fizzBuzz = '';
+        if (i % 5 === 0 && i && i % 3 === 0) {
+          fizzBuzz = `${i}: FizzBuzz`;
+        } else if (i % 3 === 0) {
+          fizzBuzz = `${i}: Fizz`;
+        } else if (i % 5 === 0) {
+          fizzBuzz = `${i}: Buzz`;
+        } else {
+          fizzBuzz = `${i}: ${word}`;
+        }
+        fs.appendFile(task2FileAsync, `${fizzBuzz}\n`, writeErr => {
+          // if error in write process, throw error
+          if (writeErr) throw writeErr;
+        });
+      })
+      .catch(err => {
+        fs.appendFile(task2FileAsync, `${i}: It shouldn't break anything!\n`, writeErr => {
+          // if error in write process, throw error
+          if (writeErr) throw writeErr;
+        });
+      });
+  }
 }
 
 runExercises();
